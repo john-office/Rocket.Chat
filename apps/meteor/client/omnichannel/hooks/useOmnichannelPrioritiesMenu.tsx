@@ -1,27 +1,32 @@
 import { LivechatPriorityWeight } from '@rocket.chat/core-typings';
 import type { Menu } from '@rocket.chat/fuselage';
-import { useMutableCallback } from '@rocket.chat/fuselage-hooks';
-import { useEndpoint, useTranslation } from '@rocket.chat/ui-contexts';
+import { useEffectEvent } from '@rocket.chat/fuselage-hooks';
+import { useEndpoint } from '@rocket.chat/ui-contexts';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
-import React, { useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
+import { useOmnichannelPriorities } from './useOmnichannelPriorities';
 import { dispatchToastMessage } from '../../lib/toast';
 import { PriorityIcon } from '../priorities/PriorityIcon';
-import { useOmnichannelPriorities } from './useOmnichannelPriorities';
 
 export const useOmnichannelPrioritiesMenu = (rid: string): ComponentProps<typeof Menu>['options'] | Record<string, never> => {
-	const t = useTranslation();
+	const { t } = useTranslation();
 	const queryClient = useQueryClient();
 	const updateRoomPriority = useEndpoint('POST', '/v1/livechat/room/:rid/priority', { rid });
 	const removeRoomPriority = useEndpoint('DELETE', '/v1/livechat/room/:rid/priority', { rid });
 	const { data: priorities } = useOmnichannelPriorities();
 
-	const handlePriorityChange = useMutableCallback((priorityId: string) => async () => {
+	const handlePriorityChange = useEffectEvent((priorityId: string) => async () => {
 		try {
 			priorityId ? await updateRoomPriority({ priorityId }) : await removeRoomPriority();
-			queryClient.invalidateQueries(['current-chats']);
-			queryClient.invalidateQueries(['/v1/rooms.info', rid]);
+			queryClient.invalidateQueries({
+				queryKey: ['current-chats'],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ['/v1/rooms.info', rid],
+			});
 		} catch (error) {
 			dispatchToastMessage({ type: 'error', message: error });
 		}

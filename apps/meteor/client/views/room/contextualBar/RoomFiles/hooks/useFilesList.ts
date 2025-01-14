@@ -47,17 +47,15 @@ export const useFilesList = (
 	const getFiles = useEndpoint('GET', apiEndPoint);
 
 	const fetchMessages = useCallback(
-		async (start, end) => {
+		async (start: number, end: number) => {
 			const { files, total } = await getFiles({
 				roomId: options.rid,
 				offset: start,
 				count: end,
 				sort: JSON.stringify({ uploadedAt: -1 }),
-				query: JSON.stringify({
-					name: { $regex: options.text || '', $options: 'i' },
-					...(options.type !== 'all' && {
-						typeGroup: options.type,
-					}),
+				...(options.text ? { name: options.text } : {}),
+				...(options.type !== 'all' && {
+					typeGroup: options.type,
 				}),
 			});
 
